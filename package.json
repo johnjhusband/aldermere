@@ -1,0 +1,28 @@
+{
+  "name": "aldermere",
+  "version": "0.0.1",
+  "private": true,
+  "description": "AI-generated fantasy game built on the player's task list. Each world is its own kingdom.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/johnjhusband/aldermere.git"
+  },
+  "author": "Husband, LLC <john@husband.llc>",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@11.8.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r --parallel dev",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "api:dev": "pnpm --filter @aldermere/api dev",
+    "api:build": "pnpm --filter @aldermere/api build"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

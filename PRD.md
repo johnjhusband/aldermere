@@ -949,7 +949,7 @@ Full feature scope ships at first release: all features above are built into the
 | Item | Status | Notes |
 |---|---|---|
 | OpenAI API access + billing | ✅ ready | |
-| Hetzner VPS | ✅ ready | Details pending from John |
+| Hetzner VPS | ✅ provisioned | `aldermere-prod-1` at `87.99.153.18` — CPX21, Ubuntu 24.04, ash-dc1 |
 | Resend account (email) | ⏳ needed | Will set up |
 | `aldermere.world` domain | ✅ registered (Namecheap) | |
 | Public GitHub repo `johnjhusband/aldermere` | ✅ created | https://github.com/johnjhusband/aldermere |
