@@ -163,7 +163,7 @@ Full feature scope ships at first release: all features above are built into the
 | Hetzner VPS | ✅ ready | Details pending from John |
 | Resend account (email) | ⏳ needed | Will set up |
 | `aldermere.world` domain | ✅ registered (Namecheap) | |
-| Public GitHub repo `johnjhusband/aldermere` | ⏳ to create | |
+| Public GitHub repo `johnjhusband/aldermere` | ✅ created | https://github.com/johnjhusband/aldermere |
 | Apple Developer Program ($99/yr) | ⏸ deferred | Required to distribute iOS app via App Store |
 | Google Play Console ($25 one-time) | ⏸ deferred | Required to distribute Android app via Play |
 | Privacy policy + Terms of Service | ⏳ needed | Publishing entity: **Husband, LLC**; contact: `john@husband.llc` |
