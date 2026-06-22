@@ -50,13 +50,15 @@ The original inspiration was household chores. The engine is generic — a famil
 ## 4. Canonical world content `ALD-001`
 **Prerequisites:** ALD-002
 
+**Full lore — factions, departments, characters, locations, recurring patterns, story-arc templates — lives in [`CANON.md`](./CANON.md).** The PRD §4 here is a summary; `CANON.md` is the source of truth and the file the in-fiction writer AI consumes.
+
 Every new world starts seeded with Maria's canon. The seed includes:
 
-**Characters:** King Ferdian; the Duke of Shambles (long-ago rival defeated by Ferdian in an arm-wrestling contest); Head Laundress Mabel; Foreman Phelps; Faye (Laundry Guild's newest recruit); Guildmaster Thorn (Arcane Floorkeepers); Mistress Thistlewick (publicly disagrees with Thorn on enchanted floor-cleaning methods); the Master-at-Arms (Knights of Vitality); Courier Wren (Royal Post).
+**Characters:** King Ferdian; the Duke of Shambles (long-ago rival defeated by Ferdian in an arm-wrestling contest); Head Laundress Mabel; Foreman Phelps; Faye (Laundry Guild's newest recruit); Guildmaster Thorn (Arcane Floorkeepers); Mistress Thistlewick (Witches' Broom Consortium); Chief Inspector Minister Brook (Ministry of Flowing Waters); Apprentice Splash; Lord Cush; Courier Wren (Royal Post). The Master-at-Arms of the Knights of Vitality is an **unnamed recurring role**.
 
 **Places:** the Fountain of Whispers (with its periodic Endless Whisper cycles, current phrase "The geese know"); the Copper Kettle Tavern (which displays three separate tables each claiming to be the historic Ferdian arm-wrestling table); the Great Basin (Porcelain Republic territory, subject of recurring embargo rumors).
 
-**Institutions:** the Laundry Guild; the Arcane Floorkeepers Guild; the Knights of Vitality; the Animal Rights Coalition; the Porcelain Republic; the Royal Culinary Society; the Royal Post; the Independent Artisans Guild.
+**Institutions:** the Laundry Guild; the Arcane Floorkeepers Guild; the Witches' Broom Consortium; the Knights of Vitality; the Animal Rights Coalition; the Porcelain Republic; the Royal Culinary Society; the Royal Post; the Ministry of Flowing Waters; the Deep Archives of the Vault; the Rangers of the Boundary; the Royal Gardens Department; the Beastkeeper Association; the Festival Planning Committee.
 
 **Recurring story patterns:**
 - **Ongoing political plotlines** that thread through everyday tasks (e.g. the animal rights labor case in which mice suspend bedding services, so citizens maintain their own quarters)
@@ -260,6 +262,34 @@ When the world or a player crosses a milestone (e.g. 100 tasks completed, an arc
 - **Negative Cases:** No event scheduled at milestone → fail. Event held without referencing the player population → fail. Player B receives full participation experience despite inactivity → fail.
 - **AI Evaluation Criteria:** Specific event type (party, parade, ceremony) may vary. The invariant is that a milestone produces a scheduled in-fiction event whose attendance reflects each player's activity around its scheduled moment.
 
+### 6.11 Faction-specific reward rules `ALD-051`
+**Prerequisites:** ALD-004
+
+Most factions award the full set of base rewards per ALD-004. Some factions override the default to award only certain reward types. **Canonical rule:** the **Royal Culinary Society** (meals — breakfast, lunch, dinner) awards **Energy only**, never Gold, Skill, or Strength. The faction/department a task belongs to is captured at task creation or by AI inference; CANON.md is the source of truth for which faction owns each task type.
+
+#### Test
+- **Type & Scope:** Integration; backend.
+- **Purpose:** Verify faction-specific reward rules apply correctly, and that the Royal Culinary Society's Energy-only rule is enforced.
+- **Preconditions:** A world with one meal task tagged to the Royal Culinary Society and one Laundry task tagged to the Laundry Guild.
+- **Inputs:** Player completes the meal task ("Breakfast", configured +15 Energy) and the Laundry task (configured 5 Gold + 1 Skill).
+- **Steps:** Submit both completions. Read stat record.
+- **Expected Results:** Meal task grants +15 Energy and nothing else. Laundry task grants 5 Gold and 1 Skill.
+- **Negative Cases:** Meal task awards any Gold/Skill/Strength → fail. Laundry reward suppressed by mistake → fail.
+
+### 6.12 Seasonal task availability windows `ALD-052`
+**Prerequisites:** ALD-002, ALD-021
+
+Some tasks are only active during real-world calendar windows. Example: mowing-tagged tasks run from the week of Easter through the end of October (temperate Northern-Hemisphere season). Windows are configured per task at world creation or via task proposals (ALD-007). The world's real-world region (ALD-002) determines how named seasonal markers (Easter, the southern summer, etc.) map to dates.
+
+#### Test
+- **Type & Scope:** Integration; backend.
+- **Purpose:** Verify seasonal task availability is enforced based on the current date and the world's region.
+- **Preconditions:** A world set in US/Mountain region. A mowing task configured with window "week of Easter through end of October."
+- **Inputs:** Simulate two dates — (a) mid-November, (b) mid-July.
+- **Steps:** At each date, check whether the mowing task is in the active task list.
+- **Expected Results:** Mid-November: mowing task is NOT in the active list. Mid-July: mowing task IS in the active list.
+- **Negative Cases:** Mowing offered in November → fail. Mowing absent in July → fail. Easter date computed for the wrong year or hemisphere → fail.
+
 ---
 
 ## 7. Game Names and identity
@@ -430,6 +460,23 @@ If a player is removed from a world, their character "leaves the kingdom" in fic
 - **Steps:** Trigger next Gazette. Read it.
 - **Expected Results:** Player A no longer appears in active quest assignments. The Gazette either does not mention them OR mentions them as having left. Prior story events involving Player A (the saved princess) are still referenced as historical facts.
 - **Negative Cases:** Player A still receiving quests → fail. Prior events erased from history → fail. Player A's account still able to log into the world → fail.
+
+### 8.7 Per-player department affinity `ALD-054`
+**Prerequisites:** ALD-002, ALD-019, ALD-020
+
+A Governor may tag a specific department or faction with **affinity for a specific player**, meaning that department's content is weighted heavily and toned specifically for that player. Example: a parent Governor tags the Royal Gardens Department with affinity for their daughter, so the daughter's Royal Gardens content skews bright, magical, fairy / unicorn / meadow-themed, while other players see more neutral Royal Gardens framing. Default for every department: no affinity (all players see equally).
+
+Affinity tags are set in the Governor interview (ALD-002) or later via the Governor's world controls. Affinity strengthens existing per-player tuning (ALD-020) rather than replacing it.
+
+#### Test
+- **Type & Scope:** AI-eval + integration; backend.
+- **Purpose:** Verify Governor-set department affinity changes the framing a player sees.
+- **Preconditions:** A world with two players, Player A and Player B. The Governor tags Royal Gardens Department with affinity for Player A.
+- **Inputs:** A mowing task that exists in the world.
+- **Steps:** Generate the day's Gazette and task descriptions for both players. Compare the framing of the mowing task.
+- **Expected Results:** Player A's framing includes more whimsical / fairy / unicorn / meadow content than Player B's. Player B's version is more neutral.
+- **Negative Cases:** Identical framing for A and B → fail. Affinity tag not respected → fail.
+- **AI Evaluation Criteria:** Specific wording varies. Player A's content must include at least one of: fairy, unicorn, meadow, magical-cute language. Player B may also have some flavor, but A's content must skew further toward whimsy than B's.
 
 ---
 
@@ -652,6 +699,21 @@ Arc scale is set by the AI based on the task list and the world's rhythm. Annual
 - **Expected Results:** Each day's Gazette references something daily, something weekly, and at least one piece of larger arc context (monthly or annual). The annual festival arrives on its scheduled in-game date and produces a multi-day event in the Gazette.
 - **Negative Cases:** All references collapse to "today" with no weekly / monthly / annual layers → fail. Annual festival never arrives or arrives on the wrong date → fail.
 - **AI Evaluation Criteria:** Tester AI classifies references in each day's output by time scale. At least 3 of the 14 days must show all four scales (or daily + weekly + monthly minimum if no annual event falls in that window).
+
+### 13.7 Multi-version weekly arc template `ALD-053`
+**Prerequisites:** ALD-030, ALD-050
+
+A recurring department with a fixed weekly chain (e.g., the **Laundry Guild's five-day chain**: Sort → Start → Transfer → Fold → Completion) runs a **multi-version story arc** across the cycle. The AI selects an arc from the department's arc library at the start of each cycle and renders Version N of the arc on day N. CANON.md §VI is the seed source for these libraries (Laundry Guild ships with 12 starter arcs).
+
+#### Test
+- **Type & Scope:** AI-eval + integration; backend.
+- **Purpose:** Verify the AI runs a multi-version arc cleanly across a department's weekly cycle, with continuity from V1 to the final version and a closure ritual on the final day.
+- **Preconditions:** A world with the Laundry Guild active and configured as a 5-day cycle. Today is day 1 of a fresh cycle.
+- **Inputs:** N/A.
+- **Steps:** Trigger generation on day 1. Note the arc theme. Advance to day 2 and re-trigger. Continue through day 5.
+- **Expected Results:** Day 1 establishes a single arc (V1). Days 2–4 progress that same arc (V2–V4) — same characters, same situation, escalating beats. Day 5 closes the arc (V5) and includes Mabel's collection-bell closing ritual.
+- **Negative Cases:** Arc switches mid-week → fail. No clear closure on day 5 → fail. AI invents arcs from scratch when the department's seed library has matching arcs available → fail (use the library when one fits).
+- **AI Evaluation Criteria:** Specific story content varies. The invariant is **arc continuity** — same characters, same through-line carry from V1 to V5.
 
 ---
 
@@ -956,3 +1018,7 @@ Tracked in chat with John — see follow-up.
 | ALD-048 | No cross-world player interaction | §18.6 | ALD-041 |
 | ALD-049 | Milestone events as rewards | §6.10 | ALD-004, ALD-030 |
 | ALD-050 | Multi-scale story arcs | §13.6 | ALD-030, ALD-033 |
+| ALD-051 | Faction-specific reward rules | §6.11 | ALD-004 |
+| ALD-052 | Seasonal task availability windows | §6.12 | ALD-002, ALD-021 |
+| ALD-053 | Multi-version weekly arc template | §13.7 | ALD-030, ALD-050 |
+| ALD-054 | Per-player department affinity | §8.7 | ALD-002, ALD-019, ALD-020 |
