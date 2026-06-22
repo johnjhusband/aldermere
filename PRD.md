@@ -13,6 +13,8 @@ A multi-tenant web + mobile app that turns any task list into a continuing, AI-g
 
 The original inspiration was household chores. The engine is generic — a family doing chores, a business running projects, a non-profit organizing volunteers, or one person trying to clean their house are all valid uses.
 
+**Underlying goal:** help players build habits and patterns in a way that feels interactive — like taking part in a world, not following a checklist.
+
 **Aldermere is not an MMORPG.** Each world is small, private, and unique to its players. No two worlds are the same.
 
 ## 2. Roles
@@ -48,9 +50,24 @@ The original inspiration was household chores. The engine is generic — a famil
 ## 4. Canonical world content `ALD-001`
 **Prerequisites:** ALD-002
 
-Every new world starts seeded with Maria's canon — characters like King Ferdian, places like the Fountain of Whispers and the Copper Kettle Tavern, institutions like the Laundry Guild, the Arcane Floorkeepers, the Knights of Vitality, the Animal Rights Coalition, etc.
+Every new world starts seeded with Maria's canon. The seed includes:
 
-The AI **adapts** the canon during the Governor interview — names, locations, factions, and tone can be tuned to fit the world's purpose. A character playing the King Ferdian role (with a name rooted in "Ferdian") is always present. The Gazette is always edited by Maria.
+**Characters:** King Ferdian; the Duke of Shambles (long-ago rival defeated by Ferdian in an arm-wrestling contest); Head Laundress Mabel; Foreman Phelps; Faye (Laundry Guild's newest recruit); Guildmaster Thorn (Arcane Floorkeepers); Mistress Thistlewick (publicly disagrees with Thorn on enchanted floor-cleaning methods); the Master-at-Arms (Knights of Vitality); Courier Wren (Royal Post).
+
+**Places:** the Fountain of Whispers (with its periodic Endless Whisper cycles, current phrase "The geese know"); the Copper Kettle Tavern (which displays three separate tables each claiming to be the historic Ferdian arm-wrestling table); the Great Basin (Porcelain Republic territory, subject of recurring embargo rumors).
+
+**Institutions:** the Laundry Guild; the Arcane Floorkeepers Guild; the Knights of Vitality; the Animal Rights Coalition; the Porcelain Republic; the Royal Culinary Society; the Royal Post; the Independent Artisans Guild.
+
+**Recurring story patterns:**
+- **Ongoing political plotlines** that thread through everyday tasks (e.g. the animal rights labor case in which mice suspend bedding services, so citizens maintain their own quarters)
+- **Annual recurring festivals** (e.g. the Sheep Shearing Festival)
+- **Mystery / lore plotlines** (e.g. the Fountain of Whispers' "Endless Whisper cycle")
+- **Historical disputes** (e.g. the three Copper Kettle tables debate)
+- **Diplomatic rumors** (e.g. the Great Basin embargo)
+- **The Day of Recovery** — periodic rest acknowledgment attributed to the Knights of Vitality; rest is treated as part of the work, not the absence of it
+- **Wisdom quotes attributed to NPCs** — e.g. the Master-at-Arms's "Strength is not built during training, but during recovery from it"
+
+The AI **adapts** the canon during the Governor interview — names, locations, factions, and tone can be tuned to fit the world's purpose. A character playing the King Ferdian role (with a name rooted in "Ferdian") is always present. The Gazette is always edited by Maria. The recurring story patterns above are preserved in adapted form.
 
 ### Test
 - **Type & Scope:** AI-eval, end-to-end; backend + web.
@@ -73,7 +90,7 @@ When a new world is created, the AI interviews the Governor to set:
 - Theme / setting / tone preferences and how to adapt canon to them
 - **Content rating** — G, PG, PG-13, R, or NC-17 (locks AI content generation)
 - **Language(s)** the world should be played in
-- Task list (paste, upload, or pick a template: housework, office, etc.). If the AI doesn't understand a task, it asks clarifying questions.
+- Task list (paste, upload, or pick a template: housework, office, etc.). If the AI doesn't understand a task, it asks clarifying questions. **Each task includes a recurrence:** one-time, daily, weekly, monthly, or custom cadence.
 - Per-task assignment vs. shared pool
 - Photo policy — required, optional with bonus, or off
 - Notification frequency for players (email cadence)
@@ -85,9 +102,9 @@ When a new world is created, the AI interviews the Governor to set:
 - **Type & Scope:** AI-eval, end-to-end; web.
 - **Purpose:** Verify the AI conducts the full interview, captures every required field, asks clarifying questions for ambiguous tasks, and persists the result in the world's database.
 - **Preconditions:** A signed-in Google user with no existing worlds.
-- **Inputs:** A test transcript that supplies: world name "Test Realm", theme "medieval kitchen staff", rating "PG", language "English", task list including one clear task ("wash the dishes") and one deliberately ambiguous task ("handle the thing"), shared pool, photo optional, daily notifications, US/Mountain timezone, single starting location, no special reward guardrails.
+- **Inputs:** A test transcript that supplies: world name "Test Realm", theme "medieval kitchen staff", rating "PG", language "English", task list including one clear daily-recurring task ("wash the dishes — daily"), one clear one-time task ("clean out the attic — once"), and one deliberately ambiguous task ("handle the thing"), shared pool, photo optional, daily notifications, US/Mountain timezone, single starting location, no special reward guardrails.
 - **Steps:** Trigger world creation. Walk through every prompt the AI asks. Provide the test answers. Submit. Inspect the resulting world record.
-- **Expected Results:** All 11 listed fields are captured and stored. The AI explicitly asks at least one clarifying question about "handle the thing" before accepting it as a task. The world record matches the inputs.
+- **Expected Results:** All 11 listed fields are captured and stored. Each task's recurrence is captured (daily / one-time / etc.). The AI explicitly asks at least one clarifying question about "handle the thing" before accepting it as a task. The world record matches the inputs.
 - **Negative Cases:** AI accepts "handle the thing" without clarification → fail. AI skips any of the 11 fields → fail. AI persists wrong values → fail.
 - **AI Evaluation Criteria:** Prompt wording and question ordering may vary. The interview must cover every field; whether it asks them as separate questions or batched is acceptable either way. Clarifying-question phrasing is free-form but must explicitly reference the ambiguous task.
 
@@ -98,7 +115,7 @@ When a new world is created, the AI interviews the Governor to set:
 ### 6.1 Task → quest conversion `ALD-003`
 **Prerequisites:** ALD-001, ALD-002
 
-Each task becomes a story beat / quest the AI weaves in.
+Each task becomes a story beat / quest the AI weaves in. Where possible, the AI connects the task to a multi-day storyline so that completing the task becomes participation in a larger plot — e.g. "make the bed" becomes maintaining your quarters during the animal rights labor case (mice on strike).
 
 #### Test
 - **Type & Scope:** AI-eval, integration; backend.
@@ -113,16 +130,16 @@ Each task becomes a story beat / quest the AI weaves in.
 ### 6.2 Base rewards `ALD-004`
 **Prerequisites:** ALD-003
 
-Completing a task gives base rewards: **Gold, Skill, Strength, Energy** (and others as needed).
+Completing a task gives base rewards: **Gold, Skill, Strength, Energy** (and others as needed). In addition to per-task rewards, the engine supports **daily aggregate rewards** — e.g. +1 Skill for completing a recurring task on a given day. Daily aggregate rewards are configured per-task by the AI based on the world's flavor and rhythm.
 
 #### Test
 - **Type & Scope:** Unit + integration; backend.
 - **Purpose:** Verify task completion writes the correct reward values to the player's stat record.
-- **Preconditions:** A world exists with a player whose stats are all 0. A quest exists with a defined reward: 5 Gold, 1 Skill.
-- **Inputs:** Mark the quest as complete for the player.
-- **Steps:** Submit completion. Read the player's stat record.
-- **Expected Results:** Player's Gold is 5, Skill is 1, Strength is 0, Energy unchanged.
-- **Negative Cases:** Rewards applied to the wrong player, doubled rewards on duplicate submission, completion accepted twice for the same quest.
+- **Preconditions:** A world exists with a player whose stats are all 0. A daily-recurring quest exists with a defined per-task reward (5 Gold, 1 Skill) and a daily-completion bonus (+1 Skill).
+- **Inputs:** Mark the quest as complete on day 1. Mark it complete again on day 2.
+- **Steps:** Submit day-1 completion. Read stats. Advance the in-app day. Submit day-2 completion. Read stats.
+- **Expected Results:** After day 1: Gold = 5, Skill = 2 (1 per-task + 1 daily bonus), Strength = 0, Energy unchanged. After day 2: Gold = 10, Skill = 4, Strength = 0, Energy unchanged.
+- **Negative Cases:** Daily bonus applied twice on the same in-app day → fail. Rewards applied to the wrong player → fail. Doubled per-task rewards on duplicate submission → fail. Completion accepted twice on the same day for the same quest → fail.
 
 ### 6.3 Photo evaluation and visibility `ALD-005`
 **Prerequisites:** ALD-004, ALD-042
@@ -227,6 +244,21 @@ The game has no end. When a task list is exhausted and the Governor adds new tas
 - **Expected Results:** A new storyline arc begins that references the new tasks. The new arc may reference past arcs (the kingdom remembers) but introduces fresh narrative threads.
 - **Negative Cases:** Story returns "the end" or refuses to continue → fail. New arc ignores the new tasks → fail.
 - **AI Evaluation Criteria:** Specific story content is free-form. The arc must (a) introduce at least one new thread and (b) wrap each of the new tasks into the narrative.
+
+### 6.10 Milestone events as rewards `ALD-049`
+**Prerequisites:** ALD-004, ALD-030
+
+When the world or a player crosses a milestone (e.g. 100 tasks completed, an arc concluded, a specific count of recurring task completions), the AI may schedule an in-fiction event as a reward — a party, a parade, a ceremony, an announcement. The event happens at a moment in story time; players who are active around that moment experience it. Players who are inactive may miss it (the party happens without them).
+
+#### Test
+- **Type & Scope:** AI-eval + integration; backend.
+- **Purpose:** Verify the AI schedules milestone events on the right triggers and that participation is gated by activity at the right moment.
+- **Preconditions:** A world with two players who have together completed 99 tasks. The world's milestone trigger is set at 100 tasks.
+- **Inputs:** Player A completes the 100th task. Player B is inactive for the next 3 in-app days.
+- **Steps:** Verify a milestone event is scheduled. Trigger generation for Player A immediately. Then trigger generation for Player B after their inactive period.
+- **Expected Results:** A milestone event (e.g. a celebration) is scheduled in the world state. Player A's Gazette references their attendance / participation. Player B's Gazette mentions that the event happened but that Player B was not present.
+- **Negative Cases:** No event scheduled at milestone → fail. Event held without referencing the player population → fail. Player B receives full participation experience despite inactivity → fail.
+- **AI Evaluation Criteria:** Specific event type (party, parade, ceremony) may vary. The invariant is that a milestone produces a scheduled in-fiction event whose attendance reflects each player's activity around its scheduled moment.
 
 ---
 
@@ -507,11 +539,12 @@ Character images are roughly consistent across scenes (comic-book-style, not pix
 ## 12. Outputs and content types `ALD-029`
 **Prerequisites:** ALD-024, ALD-030
 
-- **Newspaper-style** story digest (The Aldermere Gazette by default).
+- **Newspaper-style** story digest (The Aldermere Gazette by default). Recurring section types include: top headlines, ongoing-story updates (e.g. the animal rights case), guild / faction announcements, public notices, restaurant or location spotlights, and an evening news wrap-up. The AI may add, retire, or rename sections per world flavor.
 - **Quest descriptions** for each task.
 - **Still images** for scenes, characters, items.
 - **Story completion text** when tasks or arcs are completed.
 - **No animation.** Ever.
+- **No audio.** No music, no voiceover, no sound effects. Ever.
 
 ### Test
 - **Type & Scope:** AI-eval + integration; all platforms.
@@ -519,8 +552,8 @@ Character images are roughly consistent across scenes (comic-book-style, not pix
 - **Preconditions:** An active world with at least one open quest and one completed quest.
 - **Inputs:** N/A (snapshot of current state).
 - **Steps:** Generate Gazette. Open quest list. Open character portrait. Complete a quest and read the completion text. Inspect all rendered media on web, iOS, Android.
-- **Expected Results:** All four output types present and rendered. Every image asset is a still image (PNG / JPG / WebP). No video, no GIF, no Lottie, no canvas animations.
-- **Negative Cases:** Animated GIF, MP4, Lottie file, or animation library shipped in the asset bundle → fail.
+- **Expected Results:** All four output types present and rendered. Every image asset is a still image (PNG / JPG / WebP). No video, no GIF, no Lottie, no canvas animations. No audio assets (MP3, WAV, OGG, M4A, etc.). The Gazette contains identifiable section types (headlines, faction announcements, public notices, etc.).
+- **Negative Cases:** Animated GIF, MP4, Lottie file, or animation library shipped in the asset bundle → fail. Any audio asset present → fail. Gazette appears as a single undifferentiated block of text with no section types → fail.
 
 ---
 
@@ -598,6 +631,27 @@ The full story is persisted in the world's database and is the source of truth f
 - **Steps:** Submit query. Compare answer to DB record.
 - **Expected Results:** Answer matches DB. If compressed summary is ambiguous, the system queries the DB for clarification rather than hallucinating.
 - **Negative Cases:** AI invents a different winner → fail. AI says "I don't know" when the fact is in the DB → fail.
+
+### 13.6 Multi-scale story arcs `ALD-050`
+**Prerequisites:** ALD-030, ALD-033
+
+The story unfolds at multiple time scales simultaneously:
+- **Daily** — the Gazette and the day's quests
+- **Weekly** — short arcs (a few in-game days) tied to weekly-recurring tasks and short plotlines
+- **Monthly** — medium arcs (multi-week plotlines, e.g. the animal rights labor case unfolding)
+- **Annual** — recurring festivals and seasonal events (e.g. the Sheep Shearing Festival)
+
+Arc scale is set by the AI based on the task list and the world's rhythm. Annual events anchor to real-world calendar dates per the world's region (see ALD-021).
+
+#### Test
+- **Type & Scope:** AI-eval + integration; backend.
+- **Purpose:** Verify the AI maintains active arcs at multiple time scales simultaneously and references the right scale at the right moment.
+- **Preconditions:** A world that has run for 14 in-game days, with a daily-recurring task, a weekly-recurring task, and an annual festival scheduled to occur during the test window.
+- **Inputs:** N/A (snapshot of generated content over 14 days).
+- **Steps:** For each of the 14 days, capture the Gazette and quest descriptions. Identify daily, weekly, monthly, and annual references across the corpus.
+- **Expected Results:** Each day's Gazette references something daily, something weekly, and at least one piece of larger arc context (monthly or annual). The annual festival arrives on its scheduled in-game date and produces a multi-day event in the Gazette.
+- **Negative Cases:** All references collapse to "today" with no weekly / monthly / annual layers → fail. Annual festival never arrives or arrives on the wrong date → fail.
+- **AI Evaluation Criteria:** Tester AI classifies references in each day's output by time scale. At least 3 of the 14 days must show all four scales (or daily + weekly + monthly minimum if no annual event falls in that window).
 
 ---
 
@@ -776,8 +830,8 @@ Free to start. No cost ceilings or quotas at launch. Paid subscription to follow
 
 ## 18. What it will NOT do
 
-### 18.1 No animation
-Already covered by ALD-029 test. No additional test required.
+### 18.1 No animation, no audio
+Already covered by ALD-029 test. No additional test required. Aldermere is text + still images only — no animation, no music, no voiceover, no sound effects.
 
 ### 18.2 No real-money trading `ALD-046`
 **Prerequisites:** ALD-043
@@ -900,3 +954,5 @@ Tracked in chat with John — see follow-up.
 | ALD-046 | No real-money trading | §18.2 | ALD-043 |
 | ALD-047 | No content beyond chosen rating | §18.3 | ALD-002, ALD-030 |
 | ALD-048 | No cross-world player interaction | §18.6 | ALD-041 |
+| ALD-049 | Milestone events as rewards | §6.10 | ALD-004, ALD-030 |
+| ALD-050 | Multi-scale story arcs | §13.6 | ALD-030, ALD-033 |
