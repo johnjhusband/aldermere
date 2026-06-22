@@ -1,0 +1,1377 @@
+{
+  "schema_version": "1.0",
+  "project": "Aldermere",
+  "last_updated": "2026-06-21",
+  "source": "PRD.md",
+  "features": [
+    {
+      "control_id": "ALD-001",
+      "title": "Canonical world content",
+      "section": "4",
+      "prerequisites": ["ALD-002"],
+      "description": "Every new world starts seeded with Maria's canon — characters like King Ferdian, places like the Fountain of Whispers and the Copper Kettle Tavern, institutions like the Laundry Guild, the Arcane Floorkeepers, the Knights of Vitality, the Animal Rights Coalition, etc. The AI adapts the canon during the Governor interview — names, locations, factions, and tone can be tuned to fit the world's purpose. A character playing the King Ferdian role (with a name rooted in 'Ferdian') is always present. The Gazette is always edited by Maria.",
+      "test": {
+        "test_types": ["AI-eval", "end-to-end"],
+        "platforms": ["backend", "web"],
+        "purpose": "Verify every new world contains Maria's canon, adapted to the Governor's stated theme, with a Ferdian-rooted leader figure and Editor Maria intact.",
+        "preconditions": "A newly created world that has just completed the Governor interview.",
+        "inputs": "Three test interview transcripts producing three distinct worlds — (a) classic medieval housework, (b) modern startup office, (c) sci-fi space station.",
+        "steps": [
+          "For each test world, generate the first Gazette and the first three quest descriptions.",
+          "Read all generated text."
+        ],
+        "expected_results": [
+          "Each world's generated text contains at least one identifiable canon element (a character, place, or institution from canon, possibly renamed).",
+          "Each world contains a leader character whose name contains the 'Ferdian' root (e.g. 'King Ferdian', 'Commander Ferdian', 'Director Ferdian').",
+          "Each world identifies 'Maria' as the Editor of the Gazette (surname optional or adapted)."
+        ],
+        "negative_cases": [
+          "Leader character missing or unrelated to 'Ferdian'.",
+          "Maria absent as Editor.",
+          "Zero canon elements present."
+        ],
+        "ai_evaluation_criteria": "The role and the 'Ferdian' name root must persist. Surname forms of Maria may vary. Renamed institutions are acceptable if their function (laundry, floors, knights, animal advocacy) maps to canon."
+      }
+    },
+    {
+      "control_id": "ALD-002",
+      "title": "Governor's setup interview",
+      "section": "5",
+      "prerequisites": ["ALD-038", "ALD-044"],
+      "description": "When a new world is created, the AI interviews the Governor to set: world name (default: Aldermere); theme / setting / tone preferences and how to adapt canon to them; content rating — G, PG, PG-13, R, or NC-17 (locks AI content generation); language(s) the world should be played in; task list (paste, upload, or pick a template); per-task assignment vs. shared pool; photo policy — required, optional with bonus, or off; notification frequency for players (email cadence); real-world time zone / region for the world; whether all players start in one location, or players in different time zones start in different parts of the world (and can travel to meet, for a cost); guardrails for what players may request as rewards. If the AI doesn't understand a task, it asks clarifying questions.",
+      "test": {
+        "test_types": ["AI-eval", "end-to-end"],
+        "platforms": ["web"],
+        "purpose": "Verify the AI conducts the full interview, captures every required field, asks clarifying questions for ambiguous tasks, and persists the result in the world's database.",
+        "preconditions": "A signed-in Google user with no existing worlds.",
+        "inputs": "A test transcript that supplies: world name 'Test Realm', theme 'medieval kitchen staff', rating 'PG', language 'English', task list including one clear task ('wash the dishes') and one deliberately ambiguous task ('handle the thing'), shared pool, photo optional, daily notifications, US/Mountain timezone, single starting location, no special reward guardrails.",
+        "steps": [
+          "Trigger world creation.",
+          "Walk through every prompt the AI asks.",
+          "Provide the test answers.",
+          "Submit.",
+          "Inspect the resulting world record."
+        ],
+        "expected_results": [
+          "All 11 listed fields are captured and stored.",
+          "The AI explicitly asks at least one clarifying question about 'handle the thing' before accepting it as a task.",
+          "The world record matches the inputs."
+        ],
+        "negative_cases": [
+          "AI accepts 'handle the thing' without clarification.",
+          "AI skips any of the 11 fields.",
+          "AI persists wrong values."
+        ],
+        "ai_evaluation_criteria": "Prompt wording and question ordering may vary. The interview must cover every field; batched or sequential question style is acceptable. Clarifying-question phrasing is free-form but must explicitly reference the ambiguous task."
+      }
+    },
+    {
+      "control_id": "ALD-003",
+      "title": "Task → quest conversion",
+      "section": "6.1",
+      "prerequisites": ["ALD-001", "ALD-002"],
+      "description": "Each task becomes a story beat / quest the AI weaves in.",
+      "test": {
+        "test_types": ["AI-eval", "integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify each task in the Governor's list produces a corresponding in-world quest description that references the task action.",
+        "preconditions": "A world exists with a known task list of 5 tasks.",
+        "inputs": "Task list: ['make the bed', 'sweep the kitchen', 'take out the trash', 'feed the dog', 'water the plants'].",
+        "steps": [
+          "Trigger quest generation for the world.",
+          "Retrieve the generated quest entries for all 5 tasks."
+        ],
+        "expected_results": [
+          "Exactly 5 quests are generated.",
+          "Each quest references the underlying task action in some recognizable form.",
+          "Each quest references at least one canon element (a faction, character, or place)."
+        ],
+        "negative_cases": [
+          "Missing quests.",
+          "Duplicate quests.",
+          "Quests that don't relate to the action."
+        ],
+        "ai_evaluation_criteria": "Quest wording is free-form. 'Make the bed' can become 'the bedchamber requires order' — passes as long as the action is recognizable."
+      }
+    },
+    {
+      "control_id": "ALD-004",
+      "title": "Base rewards",
+      "section": "6.2",
+      "prerequisites": ["ALD-003"],
+      "description": "Completing a task gives base rewards: Gold, Skill, Strength, Energy (and others as needed).",
+      "test": {
+        "test_types": ["unit", "integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify task completion writes the correct reward values to the player's stat record.",
+        "preconditions": "A world exists with a player whose stats are all 0. A quest exists with a defined reward: 5 Gold, 1 Skill.",
+        "inputs": "Mark the quest as complete for the player.",
+        "steps": [
+          "Submit completion.",
+          "Read the player's stat record."
+        ],
+        "expected_results": [
+          "Player's Gold is 5.",
+          "Player's Skill is 1.",
+          "Player's Strength is 0.",
+          "Player's Energy unchanged."
+        ],
+        "negative_cases": [
+          "Rewards applied to the wrong player.",
+          "Doubled rewards on duplicate submission.",
+          "Completion accepted twice for the same quest."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-005",
+      "title": "Photo evaluation and visibility",
+      "section": "6.3",
+      "prerequisites": ["ALD-004", "ALD-042"],
+      "description": "Submitting a photo gets the AI to evaluate completion quality. Bonus points for exceptional quality. The AI reports its opinion to the player and the Governor. The player may reshoot. The Governor may request a redo or accept the task as-is. Photos are visible to the AI and the Governor. The Governor may choose to publish a photo to other players (e.g. for celebration).",
+      "test": {
+        "test_types": ["AI-eval", "integration"],
+        "platforms": ["web", "iOS", "Android", "backend"],
+        "purpose": "Verify photos are evaluated, scored, visible to AI + Governor only by default, and that publish-to-players works when the Governor opts in.",
+        "preconditions": "A world with one Governor and two players. An open quest 'make the bed' with photo optional.",
+        "inputs": "Three photos — (a) a clearly-made bed, (b) a half-made bed, (c) a photo of a cat unrelated to the task.",
+        "steps": [
+          "Player A submits photo (a).",
+          "Player B submits photo (b).",
+          "A third submission attempts photo (c).",
+          "For each, retrieve the AI's evaluation, the player's view, the Governor's view, and the other player's view.",
+          "Governor publishes photo (a) to all players."
+        ],
+        "expected_results": [
+          "Photo (a) scored 'exceptional' with bonus rewards applied.",
+          "Photo (b) scored 'complete, normal' with base rewards.",
+          "Photo (c) flagged as not matching the task with no reward; AI offers reshoot.",
+          "AI's reasoning is visible to the submitting player and the Governor.",
+          "Other players cannot see the photos.",
+          "After publishing, all players see photo (a) with a celebratory caption."
+        ],
+        "negative_cases": [
+          "A photo visible to other players without Governor approval.",
+          "AI fails to flag a clearly off-topic photo.",
+          "Bonus applied without 'exceptional' judgment."
+        ],
+        "ai_evaluation_criteria": "'Exceptional' vs. 'normal' judgments may vary between runs, but a clearly-made bed must score at least 'normal,' a half-made bed must not score 'exceptional,' and an off-topic photo must score zero."
+      }
+    },
+    {
+      "control_id": "ALD-006",
+      "title": "Reward unlocks",
+      "section": "6.4",
+      "prerequisites": ["ALD-004", "ALD-024"],
+      "description": "Stats unlock cosmetic and narrative items: character images, mounts, armor, weapons, custom scenes (e.g. a wedding, a shirt color change). Bigger requests cost more tasks.",
+      "test": {
+        "test_types": ["AI-eval", "integration"],
+        "platforms": ["backend", "web"],
+        "purpose": "Verify players can spend stats to unlock items, and the AI adaptively prices requests proportional to scope.",
+        "preconditions": "A player with 100 Gold and 50 Skill. The world allows custom requests.",
+        "inputs": "Three player requests — (a) 'change my character's shirt color to red', (b) 'give me a brown horse', (c) 'stage a full wedding scene for my character with three guests and a feast.'",
+        "steps": [
+          "For each request, the AI proposes a cost in tasks/stats.",
+          "Player accepts and pays.",
+          "Verify the unlocked item is delivered."
+        ],
+        "expected_results": [
+          "Request (a) is cheap (single-digit Gold or 1 task).",
+          "Request (b) is mid-priced.",
+          "Request (c) is the most expensive of the three.",
+          "After payment, each unlock produces the corresponding asset (updated portrait, mount image, wedding scene with images and story text).",
+          "Stats are correctly debited."
+        ],
+        "negative_cases": [
+          "Cost ordering reversed (wedding cheaper than shirt color).",
+          "Item not delivered after payment.",
+          "Stats debited without delivery."
+        ],
+        "ai_evaluation_criteria": "Exact costs vary. The required invariant is scope-proportional pricing: bigger asks cost more."
+      }
+    },
+    {
+      "control_id": "ALD-007",
+      "title": "Player-proposed tasks",
+      "section": "6.5",
+      "prerequisites": ["ALD-003", "ALD-004"],
+      "description": "Players can propose new tasks. They can begin work immediately but only earn rewards once the Governor approves.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["web", "iOS", "Android", "backend"],
+        "purpose": "Verify the propose / start / approve / reward flow works in order.",
+        "preconditions": "A world with one Governor and one player.",
+        "inputs": "Player proposes a new task: 'wash the car.' Player marks it complete before approval. Governor later approves the proposal.",
+        "steps": [
+          "Submit proposal.",
+          "Verify it appears in Governor's queue.",
+          "Player marks complete.",
+          "Verify no reward yet.",
+          "Governor approves the task.",
+          "Verify reward applies retroactively."
+        ],
+        "expected_results": [
+          "Proposal queued for Governor.",
+          "Player may mark complete pre-approval but earns 0.",
+          "On Governor approval, the previously-completed work yields full reward."
+        ],
+        "negative_cases": [
+          "Reward issued before approval.",
+          "Approval doesn't backfill the prior completion.",
+          "Governor sees no proposal queue."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-008",
+      "title": "Long-task decomposition encouragement",
+      "section": "6.6",
+      "prerequisites": ["ALD-002"],
+      "description": "Players are encouraged to break large tasks into smaller ones — more rewards, more story.",
+      "test": {
+        "test_types": ["AI-eval"],
+        "platforms": ["backend"],
+        "purpose": "Verify the AI suggests breaking down a task that's obviously too large.",
+        "preconditions": "A world.",
+        "inputs": "A new task: 'build a garage.'",
+        "steps": [
+          "Submit the task during interview or via player proposal.",
+          "Capture the AI's response."
+        ],
+        "expected_results": [
+          "AI flags this as a long task and proposes a decomposition (at least 3 sub-tasks)."
+        ],
+        "negative_cases": [
+          "AI accepts 'build a garage' as a single quest with no suggestion."
+        ],
+        "ai_evaluation_criteria": "Specific sub-tasks may vary. The AI must (a) recognize the task is long-scope and (b) propose at least 3 concrete sub-tasks."
+      }
+    },
+    {
+      "control_id": "ALD-009",
+      "title": "Skipping and narrative consequences",
+      "section": "6.7",
+      "prerequisites": ["ALD-003", "ALD-030"],
+      "description": "Skipping a task has narrative consequences (the party happens without you, the dragon finishes the soup) but never a punitive tone. Time-sensitive tasks get urgency arcs.",
+      "test": {
+        "test_types": ["AI-eval"],
+        "platforms": ["backend"],
+        "purpose": "Verify the AI handles skipped tasks with narrative consequence and never with shame, scolding, or punitive language.",
+        "preconditions": "A world with a player who has one completed task and three skipped tasks (one of which had an urgency arc — a princess to save).",
+        "inputs": "Trigger the next Gazette generation.",
+        "steps": [
+          "Read the generated Gazette and any direct messages to the player."
+        ],
+        "expected_results": [
+          "Skipped tasks are referenced as in-story events (the party went on, the laundry piled up, the princess was eaten).",
+          "The player is not blamed, shamed, or told they 'failed.'"
+        ],
+        "negative_cases": [
+          "Punitive language: 'you failed', 'you are behind', 'you should have', 'you didn't' framed as accusation.",
+          "Guilt-inducing language.",
+          "Any negative scoring of the player's character."
+        ],
+        "ai_evaluation_criteria": "A tester AI scans output for punitive language using a fixed list of phrases AND a general sentiment check. Narrative consequence is OK; personal blame is not."
+      }
+    },
+    {
+      "control_id": "ALD-010",
+      "title": "Cross-region travel costs",
+      "section": "6.8",
+      "prerequisites": ["ALD-002", "ALD-004"],
+      "description": "When players start in different regions due to timezone splits, travel to meet costs tasks. The AI sets the cost adaptively.",
+      "test": {
+        "test_types": ["integration", "AI-eval"],
+        "platforms": ["backend"],
+        "purpose": "Verify two players in different starting regions can be quoted a cost in tasks to meet, and that paying the cost moves their characters together.",
+        "preconditions": "A world configured with regional starting points. Player A in Region North, Player B in Region South. Player A has at least 5 tasks pending in their assignment.",
+        "inputs": "Player A requests to travel to Player B's region.",
+        "steps": [
+          "Submit travel request.",
+          "Capture quoted cost.",
+          "Player A completes the quoted tasks.",
+          "Verify position update."
+        ],
+        "expected_results": [
+          "A cost is quoted (non-zero, finite, and feasible relative to Player A's remaining task pool).",
+          "On payment, Player A's region in the database changes to South.",
+          "The next Gazette references the journey."
+        ],
+        "negative_cases": [
+          "Travel granted without cost.",
+          "Cost never resolves on payment.",
+          "Quoted cost requires more tasks than the player can realistically complete."
+        ],
+        "ai_evaluation_criteria": "Cost value may vary; must be feasible given the player's current and proposable task supply."
+      }
+    },
+    {
+      "control_id": "ALD-011",
+      "title": "No end",
+      "section": "6.9",
+      "prerequisites": ["ALD-033"],
+      "description": "The game has no end. When a task list is exhausted and the Governor adds new tasks, a new storyline begins.",
+      "test": {
+        "test_types": ["AI-eval", "end-to-end"],
+        "platforms": ["backend"],
+        "purpose": "Verify the game continues indefinitely as new tasks are added, with a new storyline arc beginning after a prior arc concludes.",
+        "preconditions": "A world with all current quests completed and the prior storyline arc closed.",
+        "inputs": "Governor adds 3 new tasks.",
+        "steps": [
+          "Trigger next story generation."
+        ],
+        "expected_results": [
+          "A new storyline arc begins that references the new tasks.",
+          "The new arc may reference past arcs but introduces fresh narrative threads."
+        ],
+        "negative_cases": [
+          "Story returns 'the end' or refuses to continue.",
+          "New arc ignores the new tasks."
+        ],
+        "ai_evaluation_criteria": "Specific story content is free-form. The arc must (a) introduce at least one new thread and (b) wrap each of the new tasks into the narrative."
+      }
+    },
+    {
+      "control_id": "ALD-012",
+      "title": "Game Name selection",
+      "section": "7.1",
+      "prerequisites": ["ALD-044"],
+      "description": "Every Governor and every Player chooses a Game Name during onboarding.",
+      "out_of_scope": "Profanity / abuse filtering policy is not defined in this PRD and is out of scope for this test. A separate policy and test will be added when the rules are decided.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["web", "iOS", "Android"],
+        "purpose": "Verify the system requires and stores a Game Name at the moment of onboarding for both roles.",
+        "preconditions": "A signed-in Google user invited to a new world.",
+        "inputs": "Game Name 'ThornKeeper'.",
+        "steps": [
+          "Complete onboarding through the Game Name step.",
+          "Verify storage."
+        ],
+        "expected_results": [
+          "Player record contains game_name = 'ThornKeeper'.",
+          "Onboarding cannot proceed past this step without one.",
+          "Empty / whitespace-only Game Names are rejected."
+        ],
+        "negative_cases": [
+          "Empty Game Name accepted.",
+          "Onboarding skips the step."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-013",
+      "title": "Public identity privacy",
+      "section": "7.2",
+      "prerequisites": ["ALD-012"],
+      "description": "Game Name is the public identity inside the world. Real names and email addresses are not shown to other players.",
+      "test": {
+        "test_types": ["integration", "security"],
+        "platforms": ["web", "iOS", "Android"],
+        "purpose": "Verify no view that one player can access displays another player's Google account name or email.",
+        "preconditions": "A world with two players: Player A (Google name: 'Alice Anderson', email: 'alice@example.com', Game Name: 'Stormcaller') and Player B.",
+        "inputs": "Player B accesses every screen, API endpoint, and exported view that references other players.",
+        "steps": [
+          "Enumerate views — player list, quest assignments, leaderboards, Gazette mentions, story scenes, comments, photo publish credits.",
+          "Inspect raw API responses."
+        ],
+        "expected_results": [
+          "Only 'Stormcaller' appears.",
+          "'Alice Anderson' and the email never appear."
+        ],
+        "negative_cases": [
+          "Any leak of real name or email — including in HTTP headers, debug logs visible to the client, or error messages."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-014",
+      "title": "Game Name change with adaptive cost",
+      "section": "7.3",
+      "prerequisites": ["ALD-004", "ALD-012", "ALD-020"],
+      "description": "A Game Name can be changed later for a cost. The AI sets the cost adaptively per player based on what is motivating to them (uses the motivator profile in ALD-020).",
+      "test": {
+        "test_types": ["AI-eval", "integration"],
+        "platforms": ["web", "iOS", "Android"],
+        "purpose": "Verify a player can request a Game Name change, the AI proposes a cost tuned to the player, and on payment the name updates everywhere (except the world's DB name — see ALD-016).",
+        "preconditions": "A world with one player ('Stormcaller', high Strength, low Gold, very active, motivator profile built up). Plus a second test player with a contrasting motivator profile.",
+        "inputs": "Request to change Game Name to 'Tempest' from each player.",
+        "steps": [
+          "Submit request from each player.",
+          "Capture each proposed cost.",
+          "Compare.",
+          "Pay.",
+          "Verify update."
+        ],
+        "expected_results": [
+          "A cost is proposed for each player.",
+          "On payment, the player's Game Name updates everywhere in the player-facing world.",
+          "The world's database name does not change.",
+          "The costs differ between the two players based on their motivator profiles."
+        ],
+        "negative_cases": [
+          "Free change.",
+          "Payment without name update.",
+          "DB name changes (see ALD-016).",
+          "Both players quoted the same cost."
+        ],
+        "ai_evaluation_criteria": "Specific costs vary; the invariant is that each cost reflects an analysis of that player's motivators. Two contrasting profiles must produce two distinct, plausibly-motivating costs."
+      }
+    },
+    {
+      "control_id": "ALD-015",
+      "title": "Cross-world Game Name independence",
+      "section": "7.4",
+      "prerequisites": ["ALD-012"],
+      "description": "One real user (Google account) may have a different Game Name in each world they play in.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify Game Names are per-world, not per-user.",
+        "preconditions": "A single Google user joined to two worlds.",
+        "inputs": "Pick Game Name 'Ash' in World A and 'Cinder' in World B.",
+        "steps": [
+          "Verify both records exist independently and update independently."
+        ],
+        "expected_results": [
+          "Each world stores its own Game Name.",
+          "Changing one does not change the other."
+        ],
+        "negative_cases": [
+          "Names sync across worlds.",
+          "One world clobbers the other."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-016",
+      "title": "DB name locked at world creation",
+      "section": "7.5",
+      "prerequisites": ["ALD-002"],
+      "description": "The world's database is named after the Governor's Game Name at the moment of world creation. Pattern: '{governor_game_name_at_creation}' for the first world, '{governor_game_name_at_creation}_2', '_3', etc. for additional worlds by the same Governor. Cross-Governor disambiguation: if two different Governors choose the same Game Name, the second-and-later occurrences are suffixed with a short stable hash of the Governor's Google user ID (e.g. 'mara', 'mara-7f3a', 'mara-9c21'). The first Governor to claim a name keeps the unsuffixed version. The DB name never changes once assigned.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify DB naming rule, same-Governor incrementing, cross-Governor disambiguation, and immutability on rename.",
+        "preconditions": "None.",
+        "inputs": "Governor A signs up as 'Mara'. Creates World 1, then World 2. Renames to 'Maris'. Governor B (different Google account) signs up also as 'Mara'. Creates World 1.",
+        "steps": [
+          "Inspect database server for DB names after each step."
+        ],
+        "expected_results": [
+          "After Governor A's first creation, DB 'mara' exists.",
+          "After A's second creation, DB 'mara_2' exists.",
+          "After A renames to 'Maris', both DBs are still 'mara' and 'mara_2'.",
+          "After Governor B's creation, DB 'mara-{hash}' exists (where {hash} is a short stable hash of B's Google user ID)."
+        ],
+        "negative_cases": [
+          "DB rename on Game Name change.",
+          "Wrong increment (e.g. 'mara_1' instead of 'mara').",
+          "Governor B's creation collides with Governor A's 'mara' instead of getting a hash suffix."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-017",
+      "title": "Shared story, individual perspective",
+      "section": "8.1",
+      "prerequisites": ["ALD-003", "ALD-030"],
+      "description": "All players in a world share the same evolving story but experience it from their own perspective.",
+      "test": {
+        "test_types": ["AI-eval"],
+        "platforms": ["backend", "web"],
+        "purpose": "Verify two players in the same world see the same canonical events but framed for their own perspective.",
+        "preconditions": "A world with two players who have both completed today's task. A shared event (a festival) is happening in the story.",
+        "inputs": "Trigger Gazette generation for each player.",
+        "steps": [
+          "Compare the two Gazettes."
+        ],
+        "expected_results": [
+          "Both reference the same festival, on the same day, with consistent canonical facts (who hosted it, where it was, who else was there).",
+          "The framing is personalized: each player's character is referenced as participating, with their actions noted."
+        ],
+        "negative_cases": [
+          "Two contradictory descriptions of the festival.",
+          "One player's actions credited to the other."
+        ],
+        "ai_evaluation_criteria": "Wording varies. Canonical facts (date, place, host, outcome) must match across the two outputs."
+      }
+    },
+    {
+      "control_id": "ALD-018",
+      "title": "Shared images and text",
+      "section": "8.2",
+      "prerequisites": ["ALD-030", "ALD-042"],
+      "description": "If two players encounter the same scene, they see the same AI-generated image and same text. Generated assets are stored per-world for reuse.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify generated assets are cached per-world and reused for the same scene.",
+        "preconditions": "A world. A scene reference (e.g. 'the Copper Kettle Tavern at sunset').",
+        "inputs": "Player A views the scene. Player B views the same scene.",
+        "steps": [
+          "Capture the image hash and text content delivered to each player."
+        ],
+        "expected_results": [
+          "Image hash matches.",
+          "Text content matches."
+        ],
+        "negative_cases": [
+          "Different images / different text for the same scene.",
+          "Image regenerated on each view (also a cost issue)."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-019",
+      "title": "Per-player motivator profile",
+      "section": "8.3",
+      "prerequisites": ["ALD-027"],
+      "description": "The AI builds and continuously refines a motivator profile for each player. The profile captures what styles of framing seem to motivate them most (e.g. stakes, humor, recognition, collaboration, competition, mastery). The profile is derived from how players respond to story content and how reliably they complete tasks framed in each style — not from explicit questionnaires. The motivator profile is the input feature ALD-020 (per-player story tuning) uses, and feature ALD-014 (Game Name change cost) uses, to tune output per player.",
+      "test": {
+        "test_types": ["AI-eval", "integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify the system builds a motivator profile from player behavior and that the profile changes over time as new behavior signals come in.",
+        "preconditions": "A new player with no history. The world has run for at least 7 days with simulated player behavior in which the player consistently completes humorous-framed quests and skips stakes-framed quests.",
+        "inputs": "N/A (event-driven).",
+        "steps": [
+          "Inspect the player's motivator profile after 7 days of simulated behavior.",
+          "Switch behavior — simulate 7 more days of completing stakes-framed quests and skipping humorous ones.",
+          "Inspect again."
+        ],
+        "expected_results": [
+          "Profile after day 7 emphasizes humor-driven motivation.",
+          "Profile after day 14 shifts toward stakes-driven.",
+          "The profile is a structured record (not free-form text) that downstream features can read."
+        ],
+        "negative_cases": [
+          "Profile remains empty or constant despite behavior.",
+          "Profile is unreadable / unstructured."
+        ],
+        "ai_evaluation_criteria": "Exact representation may vary; profile must include named motivator dimensions with weights or scores that demonstrably move with behavior."
+      }
+    },
+    {
+      "control_id": "ALD-020",
+      "title": "Per-player story tuning",
+      "section": "8.4",
+      "prerequisites": ["ALD-019"],
+      "description": "Story content adjusts writing style per player to maximize motivation, using the motivator profile (ALD-019). The AI may use multiple in-fiction writers under Editor Maria, each tuned to a player.",
+      "test": {
+        "test_types": ["AI-eval"],
+        "platforms": ["backend"],
+        "purpose": "Verify the AI applies distinct writing styles per player, aligned with each player's motivator profile and attributed to in-fiction writers under Editor Maria.",
+        "preconditions": "A world with two players. Player A has a stakes-dominant motivator profile (ALD-019). Player B has a humor-dominant motivator profile.",
+        "inputs": "Same quest, both players.",
+        "steps": [
+          "Generate each player's quest description."
+        ],
+        "expected_results": [
+          "Both reference the same quest.",
+          "Player A's version emphasizes urgency / consequence.",
+          "Player B's version emphasizes lightness / humor.",
+          "Each is bylined to a writer character under Editor Maria (or framed in a distinct writer's voice)."
+        ],
+        "negative_cases": [
+          "Identical text for both players.",
+          "Style mismatched to motivator profile."
+        ],
+        "ai_evaluation_criteria": "A tester AI classifies each piece's tone and confirms it matches the target player's motivator profile."
+      }
+    },
+    {
+      "control_id": "ALD-021",
+      "title": "Calendar awareness",
+      "section": "8.5",
+      "prerequisites": ["ALD-002", "ALD-030"],
+      "description": "The AI is calendar-aware — season, holiday, time-of-day shape the story based on each player's starting region.",
+      "test": {
+        "test_types": ["AI-eval"],
+        "platforms": ["backend"],
+        "purpose": "Verify generated content reflects real-world season, holiday, and time-of-day for the player's region.",
+        "preconditions": "Two test players. Player A in US/Mountain in mid-December. Player B in Australia/Sydney in mid-December.",
+        "inputs": "Trigger Gazette for each on the same real-world day.",
+        "steps": [
+          "Read both.",
+          "Look for seasonal and holiday cues."
+        ],
+        "expected_results": [
+          "Player A's content references winter / holiday-season cues.",
+          "Player B's content references summer.",
+          "Real-world holidays in each region (Christmas, the southern summer) may appear in transformed form."
+        ],
+        "negative_cases": [
+          "Both players get the same seasonal framing.",
+          "Northern-hemisphere winter applied to Australian player."
+        ],
+        "ai_evaluation_criteria": "Tester AI checks each output for hemisphere-correct seasonal markers."
+      }
+    },
+    {
+      "control_id": "ALD-022",
+      "title": "Removed player retention",
+      "section": "8.6",
+      "prerequisites": ["ALD-012"],
+      "description": "If a player is removed from a world, their character 'leaves the kingdom' in fiction. The impact they had on the world remains.",
+      "test": {
+        "test_types": ["integration", "AI-eval"],
+        "platforms": ["backend"],
+        "purpose": "Verify a removed player's character is narratively retired and their prior contributions persist in the story state.",
+        "preconditions": "A world where Player A has completed tasks that produced canonical story events (e.g. saved the princess) before being removed.",
+        "inputs": "Governor removes Player A.",
+        "steps": [
+          "Trigger next Gazette.",
+          "Read it."
+        ],
+        "expected_results": [
+          "Player A no longer appears in active quest assignments.",
+          "The Gazette either does not mention them OR mentions them as having left.",
+          "Prior story events involving Player A are still referenced as historical facts."
+        ],
+        "negative_cases": [
+          "Player A still receiving quests.",
+          "Prior events erased from history.",
+          "Player A's account still able to log into the world."
+        ],
+        "ai_evaluation_criteria": "Tester AI confirms past events involving the removed player are still referenced as historical facts in subsequent Gazettes."
+      }
+    },
+    {
+      "control_id": "ALD-023",
+      "title": "Character customization",
+      "section": "9.1",
+      "prerequisites": ["ALD-012"],
+      "description": "Customize: gender (male or female), race, stats, name, look (via self-description).",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["web", "iOS", "Android"],
+        "purpose": "Verify all five fields are captured and stored at character creation.",
+        "preconditions": "A new player who has signed in and chosen a Game Name.",
+        "inputs": "gender='female', race='elf', stats='agility-focused', name='Lyra Brightwood', look='silver hair, tall, wears moss-green cloak'.",
+        "steps": [
+          "Submit character creation.",
+          "Inspect stored character record."
+        ],
+        "expected_results": [
+          "All five fields stored."
+        ],
+        "negative_cases": [
+          "Gender accepting a value other than 'male' or 'female'.",
+          "Missing fields silently accepted."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-024",
+      "title": "AI portrait generation",
+      "section": "9.2",
+      "prerequisites": ["ALD-023", "ALD-038"],
+      "description": "AI generates the character portrait from the self-description.",
+      "test": {
+        "test_types": ["AI-eval"],
+        "platforms": ["backend"],
+        "purpose": "Verify the portrait reflects the self-description.",
+        "preconditions": "Character created with description 'silver hair, tall, wears moss-green cloak'.",
+        "inputs": "The description above.",
+        "steps": [
+          "Trigger portrait generation.",
+          "View image."
+        ],
+        "expected_results": [
+          "Image depicts a person with silver hair, tall stature, wearing a green cloak."
+        ],
+        "negative_cases": [
+          "Image ignores description.",
+          "Image generation fails silently."
+        ],
+        "ai_evaluation_criteria": "Tester AI uses vision to check for each described element. Hair and clothing color must match; stature is a soft check."
+      }
+    },
+    {
+      "control_id": "ALD-025",
+      "title": "Appearance is cosmetic only",
+      "section": "9.3",
+      "prerequisites": ["ALD-004", "ALD-023"],
+      "description": "Appearance has no gameplay effect.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify no reward, quest difficulty, or stat outcome differs based on character appearance.",
+        "preconditions": "Two players with identical stats but different appearances.",
+        "inputs": "Both complete the same quest.",
+        "steps": [
+          "Compare reward outputs."
+        ],
+        "expected_results": [
+          "Identical rewards.",
+          "Identical quest text difficulty."
+        ],
+        "negative_cases": [
+          "Any difference attributable to appearance."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-026",
+      "title": "Image consistency across scenes",
+      "section": "9.4",
+      "prerequisites": ["ALD-024"],
+      "description": "Character images are roughly consistent across scenes (comic-book-style, not pixel-perfect).",
+      "test": {
+        "test_types": ["AI-eval"],
+        "platforms": ["backend"],
+        "purpose": "Verify a character's defining features persist across multiple generated scene images.",
+        "preconditions": "A character with a fixed description, used in 5 different scene contexts.",
+        "inputs": "5 scene prompts (tavern, forest path, palace hall, market, battle).",
+        "steps": [
+          "Generate 5 images.",
+          "Vision-evaluate each."
+        ],
+        "expected_results": [
+          "In each image, the character has the same hair color, the same race / species cues, and the same signature clothing color or item.",
+          "Pose, lighting, framing may vary."
+        ],
+        "negative_cases": [
+          "Hair color changes.",
+          "Species changes."
+        ],
+        "ai_evaluation_criteria": "Tester AI scores each image on three features (hair, race, signature clothing). 4 of 5 must match all three."
+      }
+    },
+    {
+      "control_id": "ALD-027",
+      "title": "Player onboarding flow",
+      "section": "10",
+      "prerequisites": ["ALD-012", "ALD-023", "ALD-035", "ALD-044"],
+      "description": "Onboarding flow: (1) Player receives an email invitation from a Governor. (2) Player signs in with Google. (3) Player is shown the world's content rating and must accept it. For R and NC-17, age confirmation is required. (4) Player chooses a Game Name. (5) Player is introduced to the world's lore. (6) Player reads the first Gazette. (7) Player creates their character. (8) Player begins.",
+      "test": {
+        "test_types": ["end-to-end"],
+        "platforms": ["web", "iOS", "Android"],
+        "purpose": "Verify the full onboarding flow runs in the specified order and that each step blocks the next until complete.",
+        "preconditions": "A world with a content rating of PG-13.",
+        "inputs": "A test email address. Test Google account.",
+        "steps": [
+          "Governor sends invitation.",
+          "Recipient opens email, clicks link.",
+          "Signs in with Google.",
+          "Sees rating acceptance prompt.",
+          "Accepts.",
+          "Picks Game Name.",
+          "Reads lore.",
+          "Reads first Gazette.",
+          "Creates character.",
+          "Lands in the world's main view."
+        ],
+        "expected_results": [
+          "Each step completes before the next is shown.",
+          "The flow lands the player in the world ready to play."
+        ],
+        "negative_cases": [
+          "Skipping rating acceptance.",
+          "Skipping Game Name.",
+          "Skipping character creation.",
+          "R-rated world without age confirmation succeeds."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-028",
+      "title": "Children policy",
+      "section": "11",
+      "prerequisites": ["ALD-044"],
+      "description": "Under-13 children play alongside a parent on the parent's Google account. When a child turns 13 and gets their own Google account, they join the world as their own player. Whether a child has a separate sub-character on the parent's account is up to the parent / Governor.",
+      "test": {
+        "test_types": ["integration", "policy"],
+        "platforms": ["web", "iOS", "Android"],
+        "purpose": "Verify there is no Aldermere-side mechanism for an under-13 to hold their own account, and that a 13+ user joining with their own Google account is treated as a full player.",
+        "preconditions": "None.",
+        "inputs": "Test Google account A (adult). Test Google account B (claims age 13+).",
+        "steps": [
+          "Sign in with each.",
+          "Attempt to create or join a world."
+        ],
+        "expected_results": [
+          "Both succeed (Aldermere defers to Google's account-age policy).",
+          "The system never asks a user to attest under-13 status.",
+          "Adult-on-account workflows do not collect or store child PII."
+        ],
+        "negative_cases": [
+          "Aldermere collects a child's name / DOB / email separately.",
+          "Account-creation flow asks 'are you under 13?'."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-029",
+      "title": "Outputs and content types",
+      "section": "12",
+      "prerequisites": ["ALD-024", "ALD-030"],
+      "description": "Outputs include: Newspaper-style story digest (The Aldermere Gazette by default); quest descriptions for each task; still images for scenes, characters, items; story completion text when tasks or arcs are completed. No animation. Ever.",
+      "test": {
+        "test_types": ["AI-eval", "integration"],
+        "platforms": ["web", "iOS", "Android"],
+        "purpose": "Verify all four output types are produced and no animation exists anywhere in the product.",
+        "preconditions": "An active world with at least one open quest and one completed quest.",
+        "inputs": "N/A (snapshot of current state).",
+        "steps": [
+          "Generate Gazette.",
+          "Open quest list.",
+          "Open character portrait.",
+          "Complete a quest and read the completion text.",
+          "Inspect all rendered media on web, iOS, Android."
+        ],
+        "expected_results": [
+          "All four output types present and rendered.",
+          "Every image asset is a still image (PNG / JPG / WebP).",
+          "No video, no GIF, no Lottie, no canvas animations."
+        ],
+        "negative_cases": [
+          "Animated GIF, MP4, Lottie file, or animation library shipped in the asset bundle."
+        ],
+        "ai_evaluation_criteria": "Tester AI confirms output type variety and absence of animation indicators in the asset bundle."
+      }
+    },
+    {
+      "control_id": "ALD-030",
+      "title": "On-interaction generation",
+      "section": "13.1",
+      "prerequisites": ["ALD-002", "ALD-038"],
+      "description": "Story-content generation (new Gazettes, quest descriptions, scene images, story-completion text) fires only when a player interacts with the app, not on a fixed schedule. Notification composition (the body of a story-flavored email or push) is a separate path: it may compose short in-fiction text at scheduled-cadence time without triggering full story-content regeneration. Notifications draw from already-generated quest descriptions and known story state; they may add a short framing sentence, but they must not advance the world's plot.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify story-content generation is triggered by player action only, and that scheduled notifications do not advance the world's plot.",
+        "preconditions": "A world with cadence-based notifications enabled but no active player interaction.",
+        "inputs": "No player interaction for 7 days while scheduled notifications fire daily, then a player opens the app.",
+        "steps": [
+          "Monitor server logs for generation events.",
+          "Inspect what each scheduled notification contains.",
+          "Open the app as a player.",
+          "Re-monitor."
+        ],
+        "expected_results": [
+          "Scheduled notifications fire daily but contain only references to existing state plus short framing — no new plot events, no new scenes, no Gazette advance.",
+          "Zero story-content generation events during the silence.",
+          "On player interaction, story-content generation fires."
+        ],
+        "negative_cases": [
+          "Story plot advances in notifications during silence.",
+          "Story-content generation fires on a schedule.",
+          "App open with no generation."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-031",
+      "title": "Compressed state input",
+      "section": "13.2",
+      "prerequisites": ["ALD-030", "ALD-033"],
+      "description": "The AI is given a compressed summary of prior story state plus relevant facts from the database. It does not re-read the full story every time.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify the AI receives a compressed summary, not the raw story log, on each generation call.",
+        "preconditions": "A world with at least 50,000 tokens of accumulated story.",
+        "inputs": "Trigger a generation call. Capture the prompt sent to OpenAI.",
+        "steps": [
+          "Compare the prompt to the raw story log."
+        ],
+        "expected_results": [
+          "Prompt is substantially smaller than the raw log (target: under 25% of raw size for established worlds).",
+          "The prompt contains a compressed summary plus relevant facts retrieved for this generation."
+        ],
+        "negative_cases": [
+          "Full story log sent (cost + context).",
+          "No summary or no fact context (continuity will drift)."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-032",
+      "title": "50% context arc-close threshold",
+      "section": "13.3",
+      "prerequisites": ["ALD-030"],
+      "description": "When the AI's context window reaches ~50% full during a story arc, the AI begins gracefully bringing the current arc to a close.",
+      "test": {
+        "test_types": ["AI-eval", "integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify arc-closure logic activates at the 50% context threshold.",
+        "preconditions": "A world mid-arc whose generation context is approaching 50% full.",
+        "inputs": "Drive generation until context crosses 50%. Capture next several generations.",
+        "steps": [
+          "Inspect generated text for arc-closing language."
+        ],
+        "expected_results": [
+          "Generations after crossing 50% begin wrapping the active arc.",
+          "Within a bounded number of generations after crossing, the arc explicitly closes."
+        ],
+        "negative_cases": [
+          "AI continues opening new plot threads after crossing 50%.",
+          "Hard cutoff with no closure."
+        ],
+        "ai_evaluation_criteria": "A tester AI reads the generations and confirms a closure pattern. Specific resolution events may vary."
+      }
+    },
+    {
+      "control_id": "ALD-033",
+      "title": "Compression after arc close",
+      "section": "13.4",
+      "prerequisites": ["ALD-032"],
+      "description": "After an arc closes, compression of completed story segments is used to free context for the next arc.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify completed arc content is compressed and stored, freeing context for the next arc.",
+        "preconditions": "A world that just closed an arc.",
+        "inputs": "N/A (event-driven).",
+        "steps": [
+          "Inspect database before and after arc close.",
+          "Check the compressed summary record."
+        ],
+        "expected_results": [
+          "A new compressed summary record exists for the closed arc.",
+          "Subsequent generations use the summary, not the raw text.",
+          "Raw text remains in the DB as source of truth."
+        ],
+        "negative_cases": [
+          "Raw arc content deleted.",
+          "No summary written.",
+          "Next arc generation references raw arc text."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-034",
+      "title": "DB as fact source of truth",
+      "section": "13.5",
+      "prerequisites": ["ALD-031"],
+      "description": "The full story is persisted in the world's database and is the source of truth for fact-checking.",
+      "test": {
+        "test_types": ["integration", "AI-eval"],
+        "platforms": ["backend"],
+        "purpose": "Verify the AI can be queried about prior story facts and answers consistently with the database.",
+        "preconditions": "A world with rich story history. A specific known fact (e.g. 'Sir Edrick won the arm-wrestling contest in Spring of Year 1').",
+        "inputs": "Ask the AI 'who won the arm-wrestling contest in Spring of Year 1?'",
+        "steps": [
+          "Submit query.",
+          "Compare answer to DB record."
+        ],
+        "expected_results": [
+          "Answer matches DB.",
+          "If compressed summary is ambiguous, the system queries the DB for clarification rather than hallucinating."
+        ],
+        "negative_cases": [
+          "AI invents a different winner.",
+          "AI says 'I don't know' when the fact is in the DB."
+        ],
+        "ai_evaluation_criteria": "Tester AI confirms the AI's answer matches the DB record exactly on the canonical fact (winner identity, event, year)."
+      }
+    },
+    {
+      "control_id": "ALD-035",
+      "title": "Email notifications (story-flavored, Governor cadence)",
+      "section": "14.1",
+      "prerequisites": ["ALD-039"],
+      "description": "Story-flavored email to each player with their open tasks, on a cadence the Governor sets. Tone matches the world; the email reads like in-fiction correspondence, not a checklist. Email composition follows the notification-composition path described in ALD-030 — it does not advance the world's plot.",
+      "test": {
+        "test_types": ["integration", "AI-eval"],
+        "platforms": ["backend"],
+        "purpose": "Verify emails are sent on the right schedule, addressed to the right players, with story-flavored content matching the world's tone, and without advancing the world's plot.",
+        "preconditions": "A world with two players and a daily email cadence.",
+        "inputs": "Wait for the scheduled trigger. Capture sent emails.",
+        "steps": [
+          "Inspect Resend delivery records and email bodies.",
+          "Compare email contents to current world state."
+        ],
+        "expected_results": [
+          "Both players receive an email.",
+          "Each body references the player's open quests in in-fiction language (no bare checklist).",
+          "Tone matches the world's rating and theme.",
+          "Email content references only existing world state — no new plot events."
+        ],
+        "negative_cases": [
+          "Plain-checklist email body.",
+          "Email sent to wrong player.",
+          "Email sent off-cadence.",
+          "Email introduces new plot events."
+        ],
+        "ai_evaluation_criteria": "Tester AI checks body for in-fiction framing markers (character names, place names, narrative voice) and that no new named characters or events appear that are not already in world state."
+      }
+    },
+    {
+      "control_id": "ALD-036",
+      "title": "Push notifications",
+      "section": "14.2",
+      "prerequisites": ["ALD-035"],
+      "description": "Push notifications are delivered to the iOS and Android apps in addition to email.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["iOS", "Android"],
+        "purpose": "Verify push notifications fire on the same cadence as email and deliver to registered devices.",
+        "preconditions": "A player with the iOS app installed and push permission granted, plus a player with the Android app and push granted.",
+        "inputs": "Wait for cadence trigger.",
+        "steps": [
+          "Inspect device-side push delivery."
+        ],
+        "expected_results": [
+          "Both devices receive a push that mirrors the email's intent in shorter form."
+        ],
+        "negative_cases": [
+          "Push not delivered.",
+          "Email without push."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-037",
+      "title": "Unsubscribe / disable",
+      "section": "14.3",
+      "prerequisites": ["ALD-035", "ALD-036"],
+      "description": "Players may unsubscribe from email and/or disable push, while still able to use the app.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["web", "iOS", "Android"],
+        "purpose": "Verify unsubscribe and push-off settings stick and the app remains usable.",
+        "preconditions": "A player receiving both email and push.",
+        "inputs": "Player unsubscribes from email. Player disables push. Cadence fires.",
+        "steps": [
+          "Inspect Resend logs and device push state."
+        ],
+        "expected_results": [
+          "No email sent.",
+          "No push delivered.",
+          "The player can still open the app and play normally."
+        ],
+        "negative_cases": [
+          "Email or push still sent after unsubscribe.",
+          "App refuses to load after unsubscribe."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-038",
+      "title": "OpenAI integration (text, image, vision)",
+      "section": "15.1",
+      "prerequisites": [],
+      "description": "OpenAI is the provider for story text, image generation, and vision-based photo evaluation.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify all three OpenAI capability paths work end-to-end against the live API.",
+        "preconditions": "OpenAI API key configured. Test prompt for each capability.",
+        "inputs": "Text prompt, image prompt, image-to-eval.",
+        "steps": [
+          "Make one call of each type.",
+          "Capture responses."
+        ],
+        "expected_results": [
+          "All three calls return successful responses with the expected output type."
+        ],
+        "negative_cases": [
+          "Any 4xx / 5xx from OpenAI.",
+          "Response payload missing expected field."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-039",
+      "title": "Resend integration",
+      "section": "15.2",
+      "prerequisites": [],
+      "description": "Resend is the email provider.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify Resend can send a test email from the Aldermere sending identity and the message is delivered.",
+        "preconditions": "Resend API key configured. Verified sending domain. Test recipient mailbox accessible.",
+        "inputs": "Subject 'Aldermere test', body 'Hello from Aldermere.'",
+        "steps": [
+          "Send.",
+          "Wait.",
+          "Check recipient inbox and Resend delivery log."
+        ],
+        "expected_results": [
+          "Resend logs success.",
+          "Email arrives in recipient inbox within 60 seconds.",
+          "Sender domain matches the verified identity."
+        ],
+        "negative_cases": [
+          "Resend reports failure.",
+          "Email not delivered.",
+          "Sender domain shows as spoofed / unverified."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-040",
+      "title": "Hetzner / Docker deployment",
+      "section": "15.3",
+      "prerequisites": [],
+      "description": "Backend runs in Docker on a Hetzner VPS.",
+      "test": {
+        "test_types": ["infrastructure"],
+        "platforms": ["backend"],
+        "purpose": "Verify the backend image builds, deploys to the Hetzner VPS, and serves HTTPS traffic.",
+        "preconditions": "Hetzner VPS provisioned. SSH access. Docker installed.",
+        "inputs": "Backend Docker image, tagged.",
+        "steps": [
+          "Build locally.",
+          "Push image.",
+          "Deploy.",
+          "Curl the HTTPS endpoint."
+        ],
+        "expected_results": [
+          "Image builds without warnings.",
+          "Container runs without restart loop.",
+          "HTTPS endpoint returns 200 on a health check.",
+          "Certificate is valid."
+        ],
+        "negative_cases": [
+          "Build fails.",
+          "Container exits.",
+          "HTTPS not enforced."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-041",
+      "title": "Per-world database isolation",
+      "section": "15.4",
+      "prerequisites": ["ALD-016", "ALD-040"],
+      "description": "One database per world, per the naming rule in ALD-016.",
+      "test": {
+        "test_types": ["integration", "security"],
+        "platforms": ["backend"],
+        "purpose": "Verify no query for World A can return rows from World B.",
+        "preconditions": "Two worlds. Player in World A. Player in World B.",
+        "inputs": "Player A's session attempts to query and join across DB boundaries.",
+        "steps": [
+          "Issue API calls as Player A that try to fetch player lists, story content, photos for any world other than A."
+        ],
+        "expected_results": [
+          "All such calls return 403 or 404.",
+          "No row from World B is returned through any endpoint."
+        ],
+        "negative_cases": [
+          "Any row from another world returned.",
+          "Any error message that leaks the existence of other worlds' DB names."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-042",
+      "title": "Object storage for assets",
+      "section": "15.5",
+      "prerequisites": ["ALD-040"],
+      "description": "Photos and generated images live in object storage (Hetzner Storage Box or S3-compatible).",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify uploads land in object storage, are served via authenticated URLs, and are scoped to a world.",
+        "preconditions": "Object storage bucket configured.",
+        "inputs": "Upload a test photo.",
+        "steps": [
+          "Upload.",
+          "Retrieve.",
+          "Attempt cross-world retrieval."
+        ],
+        "expected_results": [
+          "Upload succeeds.",
+          "Retrieval works for an authorized player in the same world.",
+          "Cross-world retrieval is rejected."
+        ],
+        "negative_cases": [
+          "Public unauthenticated URL.",
+          "Cross-world access succeeds."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-043",
+      "title": "Single codebase ships three platforms",
+      "section": "15.6",
+      "prerequisites": [],
+      "description": "The codebase produces a web build, an iOS build, and an Android build from one source tree.",
+      "test": {
+        "test_types": ["build"],
+        "platforms": ["web", "iOS", "Android"],
+        "purpose": "Verify a single build command (or three parallel ones) produces shippable artifacts for all three platforms from one source tree.",
+        "preconditions": "Codebase scaffolded. Build tooling installed.",
+        "inputs": "N/A.",
+        "steps": [
+          "Run web build.",
+          "Run iOS build (via Expo).",
+          "Run Android build (via Expo)."
+        ],
+        "expected_results": [
+          "All three builds succeed.",
+          "Web bundle exists.",
+          "iOS .ipa or simulator binary exists.",
+          "Android .aab or APK exists."
+        ],
+        "negative_cases": [
+          "Any build fails.",
+          "Platform-specific code paths that are not shared (flag for review)."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-044",
+      "title": "Google Sign-In",
+      "section": "15.7",
+      "prerequisites": ["ALD-043"],
+      "description": "Google Sign-In is the only authentication method.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["web", "iOS", "Android"],
+        "purpose": "Verify Google Sign-In works on web, iOS, and Android, and that no other auth method is exposed.",
+        "preconditions": "Google OAuth client IDs configured per platform.",
+        "inputs": "A test Google account.",
+        "steps": [
+          "Open the sign-in screen on each platform.",
+          "Complete the Google flow.",
+          "Verify session."
+        ],
+        "expected_results": [
+          "Sign-in succeeds on all three.",
+          "Session token is created.",
+          "No email/password, magic link, or other auth path is visible in the UI or API."
+        ],
+        "negative_cases": [
+          "Any alternative auth path present.",
+          "Sign-in fails on any platform."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-045",
+      "title": "World lifecycle",
+      "section": "16",
+      "prerequisites": ["ALD-002", "ALD-041"],
+      "description": "A world exists as long as the Governor keeps it active. If a Governor abandons or cancels, the world is archived (not deleted). Archived worlds are kept forever for now.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["backend"],
+        "purpose": "Verify archive on cancel, no data loss, and resume from archive.",
+        "preconditions": "An active world with story state, players, photos.",
+        "inputs": "Governor cancels the world. Later, Governor resumes it.",
+        "steps": [
+          "Cancel.",
+          "Inspect DB and storage.",
+          "Resume.",
+          "Verify state."
+        ],
+        "expected_results": [
+          "Cancel marks world as archived; data remains intact (DB, photos, story).",
+          "Players are notified the world is paused.",
+          "Resume restores active state with all history."
+        ],
+        "negative_cases": [
+          "Any data deleted on cancel.",
+          "Resume returns a fresh world."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-046",
+      "title": "No real-money trading",
+      "section": "18.2",
+      "prerequisites": ["ALD-043"],
+      "description": "Negative requirement: no in-app or API mechanism allows players to exchange real money for in-game items or to each other.",
+      "test": {
+        "test_types": ["integration", "security"],
+        "platforms": ["web", "iOS", "Android"],
+        "purpose": "Verify no in-app or API mechanism allows players to exchange real money for in-game items or to each other.",
+        "preconditions": "A world with two players.",
+        "inputs": "Attempt to find any UI element or API endpoint that transfers value between players or accepts payment for in-game items.",
+        "steps": [
+          "UI walkthrough.",
+          "API enumeration."
+        ],
+        "expected_results": [
+          "No such endpoint exists.",
+          "No such UI element exists."
+        ],
+        "negative_cases": [
+          "Any payment-to-player or in-game-purchase endpoint present."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    },
+    {
+      "control_id": "ALD-047",
+      "title": "No content beyond chosen rating",
+      "section": "18.3",
+      "prerequisites": ["ALD-002", "ALD-030"],
+      "description": "Negative requirement: generated content respects the world's content rating and never exceeds it.",
+      "test": {
+        "test_types": ["AI-eval"],
+        "platforms": ["backend"],
+        "purpose": "Verify generated content respects the world's content rating.",
+        "preconditions": "Four worlds at G, PG, PG-13, R. (NC-17 omitted from this test; can be added separately.)",
+        "inputs": "Trigger 20 generations per world covering Gazettes, quests, and story scenes.",
+        "steps": [
+          "Capture all output.",
+          "Classify each piece against standard rating taxonomies."
+        ],
+        "expected_results": [
+          "No output exceeds the world's rating."
+        ],
+        "negative_cases": [
+          "Any output exceeding rating.",
+          "AI refuses to generate appropriate-rating content (under-restriction)."
+        ],
+        "ai_evaluation_criteria": "Tester AI classifies each output and flags any over-rating. Sample size of 20 per world should reliably surface drift."
+      }
+    },
+    {
+      "control_id": "ALD-048",
+      "title": "No cross-world player interaction",
+      "section": "18.6",
+      "prerequisites": ["ALD-041"],
+      "description": "Negative requirement: no UI surface allows a player in one world to see, message, or interact with a player in another world.",
+      "test": {
+        "test_types": ["integration"],
+        "platforms": ["web", "iOS", "Android"],
+        "purpose": "Verify no UI surface allows a player in one world to see, message, or interact with a player in another world.",
+        "preconditions": "Two worlds. The same Google account is a player in both.",
+        "inputs": "Sign in. Switch worlds. Look for any cross-reference.",
+        "steps": [
+          "Enumerate all screens for any mention of 'other worlds you're in' beyond the world picker, and any messaging surface."
+        ],
+        "expected_results": [
+          "The world picker is the only place that lists other worlds.",
+          "No messaging, no leaderboards, no shared events."
+        ],
+        "negative_cases": [
+          "Any cross-world social surface."
+        ],
+        "ai_evaluation_criteria": null
+      }
+    }
+  ]
+}
