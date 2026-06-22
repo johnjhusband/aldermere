@@ -1,0 +1,25 @@
+# Aldermere — Caddy reverse proxy with auto-HTTPS
+#
+# Caddy auto-provisions Let's Encrypt certificates the first time the
+# domain resolves to this host on ports 80 and 443.
+
+aldermere.world, www.aldermere.world {
+    encode gzip zstd
+
+    # Health and root pass through to the API
+    reverse_proxy localhost:3000
+
+    # Sensible security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options nosniff
+        Referrer-Policy strict-origin-when-cross-origin
+        # Caddy adds Server: Caddy by default; quiet it
+        -Server
+    }
+
+    log {
+        output file /var/log/caddy/aldermere.log
+        format json
+    }
+}
