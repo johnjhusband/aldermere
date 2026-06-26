@@ -38,3 +38,9 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Bootstrap script artifacts (may contain sensitive captures)
+scripts/screenshots/
+*.dpapi
+scripts/*temp*
+scripts/*tmp*
