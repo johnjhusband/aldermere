@@ -9,6 +9,7 @@ WorkingDirectory=/opt/aldermere/apps/api
 Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=PATH=/root/.local/share/fnm/node-versions/v22.23.0/installation/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+EnvironmentFile=/opt/aldermere/apps/api/.env
 ExecStart=/root/.local/share/fnm/node-versions/v22.23.0/installation/bin/node /opt/aldermere/apps/api/dist/index.js
 Restart=always
 RestartSec=3

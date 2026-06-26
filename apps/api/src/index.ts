@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import { pingDb } from './db.js';
 
 const app = new Hono();
 
@@ -13,6 +14,11 @@ app.get('/health', (c) =>
     time: new Date().toISOString(),
   }),
 );
+
+app.get('/health/db', async (c) => {
+  const r = await pingDb();
+  return c.json(r, r.ok ? 200 : 503);
+});
 
 const port = Number(process.env.PORT ?? 3000);
 
