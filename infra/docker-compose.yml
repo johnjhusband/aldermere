@@ -1,0 +1,29 @@
+name: aldermere
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: aldermere-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aldermere}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: ${POSTGRES_DB:-aldermere_control}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      # Host-only — API on the same host connects via 127.0.0.1.
+      # NOT exposed publicly; ufw only allows 22/80/443.
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aldermere} -d ${POSTGRES_DB:-aldermere_control}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    shm_size: 256mb
+
+volumes:
+  pgdata:
+    name: aldermere-pgdata
